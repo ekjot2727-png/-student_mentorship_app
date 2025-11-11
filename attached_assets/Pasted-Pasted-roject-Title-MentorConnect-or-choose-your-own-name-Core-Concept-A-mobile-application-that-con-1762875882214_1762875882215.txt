@@ -1,0 +1,145 @@
+Pasted-roject-Title-MentorConnect-or-choose-your-own-name-Core-Concept-A-mobile-application-that-conne-1762875869377_1762875869378.txt
+roject Title: MentorConnect (or choose your own name)
+
+Core Concept: A mobile application that connects students seeking free help with volunteer tutors and mentors. The app will facilitate user registration (as Student or Mentor), searching for mentors by subject, booking sessions, and real-time chat.
+
+Technology Stack:
+
+Mobile App (Frontend): React Native with Expo
+
+Backend Server: Node.js with Express
+
+Database: MongoDB (using Mongoose)
+
+Real-time Chat: Socket.io
+
+Authentication: JSON Web Tokens (JWT)
+
+1. Initial Setup Prompt (Your First Prompt to Replit AI)
+"Please generate the boilerplate code for a new project with the following structure:
+
+A React Native (using Expo) mobile app in a directory named /client.
+
+A Node.js and Express backend server in a directory named /server.
+
+In the /server directory, please:
+
+Install express, mongoose, cors, bcryptjs, jsonwebtoken, and socket.io.
+
+Create a basic index.js file that starts an Express server and connects to a MongoDB database (using a MONGO_URI environment variable).
+
+Set up a basic http server integrated with Express and socket.io.
+
+Create a /models directory.
+
+Create a /routes directory.
+
+Create a /controllers directory."
+
+2. Feature Prompts (Use these one by one)
+After the initial setup, use these prompts to build features.
+
+Feature 1: User Authentication
+"In the /server, let's build the User Authentication.
+
+Create a User model (/models/User.js) with:
+
+username (String, required, unique)
+
+email (String, required, unique)
+
+password (String, required)
+
+role (String, required, enum: ['student', 'mentor'])
+
+In the User model, add a pre-save hook using bcryptjs to hash the password before saving.
+
+Create an /api/auth route (/routes/auth.js) with two endpoints:
+
+POST /api/auth/register: Takes username, email, password, and role. Hashes the password, creates a new user, and returns a JWT.
+
+POST /api/auth/login: Takes email and password. Compares the password using bcryptjs, and if valid, returns a JWT.
+
+Create the corresponding controller functions in /controllers/authController.js."
+
+Feature 2: Mentor Profile & Search
+"Let's build the mentor profile system.
+
+In the /server, create a Profile model (/models/Profile.js) with:
+
+user (ObjectId, ref: 'User', required)
+
+bio (String)
+
+subjects (Array of Strings, e.g., ['Math', 'Physics', 'React', 'Java'])
+
+availability (String, e.g., 'Mon-Fri 5PM-7PM')
+
+Create an /api/profile route (/routes/profile.js):
+
+GET /api/profile/me: Gets the profile for the logged-in user.
+
+POST /api/profile: Creates or updates the profile for the logged-in user.
+
+GET /api/mentors: (Search Endpoint) Gets all users with role: 'mentor' and populates their profiles. It should allow querying by subject (e.g., /api/mentors?subject=Math).
+
+GET /api/mentors/:id: Gets a specific mentor's profile by their user ID.
+
+Create the corresponding controller functions in /controllers/profileController.js."
+
+Feature 3: Session Booking System
+"Let's add a simple booking system.
+
+In the /server, create a Session model (/models/Session.js) with:
+
+student (ObjectId, ref: 'User', required)
+
+mentor (ObjectId, ref: 'User', required)
+
+subject (String, required)
+
+scheduledTime (Date, required)
+
+status (String, enum: ['pending', 'confirmed', 'completed', 'cancelled'], default: 'pending')
+
+Create an /api/sessions route (/routes/sessions.js):
+
+POST /api/sessions/book: Creates a new session with status: 'pending'. The student is the logged-in user. The mentor and scheduledTime are in the request body.
+
+PUT /api/sessions/:id/confirm: For mentors. Changes session status to 'confirmed'.
+
+PUT /api/sessions/:id/cancel: For students or mentors. Changes session status to 'cancelled'.
+
+GET /api/sessions/me: Gets all sessions (as student or mentor) for the logged-in user."
+
+Feature 4: Basic Real-time Chat
+"Let's set up the basic real-time chat using Socket.io.
+
+In the /server/index.js, add the Socket.io logic.
+
+When a user connects, they should emit a joinRoom event with their userId. The server should make them join a room named after their userId.
+
+Listen for a sendMessage event. The event data should include receiverId, senderId, and message.
+
+When the server receives sendMessage, it should emit a receiveMessage event to the room matching the receiverId.
+
+(Optional) Create a Message model (/models/Message.js) to store chat history and an API endpoint GET /api/chat/:userId to retrieve message history with another user."
+
+Feature 5: Frontend (React Native)
+"In the /client app, let's create the screens.
+
+Set up React Navigation (Tab Navigator and Stack Navigator).
+
+Create the following screens:
+
+AuthScreen (for Login/Register).
+
+MentorSearchScreen: Displays a list of mentors fetched from GET /api/mentors. Include a search bar to filter by subject.
+
+MentorProfileScreen: Displays details of a single mentor. If the user is a 'student', show a 'Book Session' button.
+
+DashboardScreen: Shows the user's upcoming sessions (fetched from GET /api/sessions/me).
+
+ChatListScreen: Shows all users the current user has a conversation with.
+
+ChatScreen: A screen with a GiftedChat component (or similar) that connects to the Socket.io server for real-time messaging."
