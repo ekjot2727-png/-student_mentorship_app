@@ -63,7 +63,7 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
-    const user: User = { ...insertUser, id };
+    const user: User = { ...insertUser, id, role: insertUser.role as "student" | "mentor" };
     this.users.set(id, user);
     return user;
   }
@@ -84,7 +84,13 @@ export class MemStorage implements IStorage {
     }
     
     const id = randomUUID();
-    const profile: Profile = { id, ...insertProfile };
+    const profile: Profile = { 
+      id, 
+      ...insertProfile, 
+      bio: insertProfile.bio || null,
+      subjects: insertProfile.subjects || null,
+      availability: insertProfile.availability || null,
+    };
     this.profiles.set(id, profile);
     return profile;
   }
@@ -175,7 +181,7 @@ export class MemStorage implements IStorage {
     });
     
     const partners: User[] = [];
-    for (const partnerId of partnerIds) {
+    for (const partnerId of Array.from(partnerIds)) {
       const user = await this.getUser(partnerId);
       if (user) partners.push(user);
     }

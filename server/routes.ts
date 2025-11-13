@@ -261,14 +261,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         if (message.type === 'join') {
           userId = message.userId;
-          userConnections.set(userId, ws);
+          if (userId) {
+            userConnections.set(userId, ws);
+          }
         } else if (message.type === 'sendMessage') {
           const { senderId, receiverId, content } = message;
 
           const savedMessage = await storage.createMessage({
-            senderId,
-            receiverId,
-            content,
+            senderId: senderId as string,
+            receiverId: receiverId as string,
+            content: content as string,
           });
 
           const senderWs = userConnections.get(senderId);
