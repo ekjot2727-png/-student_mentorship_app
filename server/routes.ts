@@ -3,12 +3,13 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import {
-  hashPassword,
-  comparePassword,
-  generateToken,
+  generateAccessToken,
+  generateTokenPair,
+  verifyAccessToken,
   authMiddleware,
   type AuthRequest,
 } from "./auth";
+import { hashPassword, comparePassword } from "./utils/password";
 import { insertUserSchema, insertProfileSchema, insertSessionSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -26,7 +27,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Username already exists" });
       }
 
-      const hashedPassword = hashPassword(password);
+      const hashedPassword = await hashPassword(password);
       const user = await storage.createUser({
         username,
         email,
@@ -34,10 +35,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: role as "student" | "mentor",
       });
 
-      const token = generateToken(user);
+      const tokens = generateTokenPair(user);
       const { password: _, ...userWithoutPassword } = user;
 
-      res.json({ user: userWithoutPassword, token });
+      res.json({ user: userWithoutPassword, ...tokens });
     } catch (error) {
       res.status(400).json({ error: "Invalid request" });
     }
@@ -48,14 +49,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { email, password } = req.body;
 
       const user = await storage.getUserByEmail(email);
-      if (!user || !comparePassword(password, user.password)) {
+      if (!user || !(await comparePassword(password, user.password))) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
-      const token = generateToken(user);
+      const tokens = generateTokenPair(user);
       const { password: _, ...userWithoutPassword } = user;
 
-      res.json({ user: userWithoutPassword, token });
+      res.json({ user: userWithoutPassword, ...tokens });
     } catch (error) {
       res.status(400).json({ error: "Invalid request" });
     }

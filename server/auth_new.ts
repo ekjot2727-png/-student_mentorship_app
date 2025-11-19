@@ -1,4 +1,4 @@
-import jwt, { JwtPayload } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { type Request, type Response, type NextFunction } from "express";
 import { type User } from "@shared/schema";
 import { hashPassword, comparePassword } from "./utils/password";
@@ -6,7 +6,7 @@ import { CustomError } from "./middleware/errorHandler";
 
 // ==================== JWT Configuration ====================
 
-const JWT_SECRET = process.env.SESSION_SECRET || (process.env.NODE_ENV === 'development' ? 'dev-secret-key' : undefined);
+const JWT_SECRET = process.env.SESSION_SECRET;
 const ACCESS_TOKEN_EXPIRY = process.env.JWT_ACCESS_EXPIRES || "15m";
 const REFRESH_TOKEN_EXPIRY = process.env.JWT_REFRESH_EXPIRES || "30d";
 
@@ -16,11 +16,13 @@ if (!JWT_SECRET) {
 
 // ==================== Token Types ====================
 
-export interface TokenPayload extends JwtPayload {
+export interface TokenPayload {
   id: string;
   email: string;
   role: "student" | "mentor";
   type: "access" | "refresh";
+  iat?: number;
+  exp?: number;
 }
 
 export interface AuthRequest extends Request {
@@ -38,7 +40,7 @@ export { hashPassword, comparePassword };
  * Generate a short-lived access token
  */
 export function generateAccessToken(user: User): string {
-  const payload: Omit<TokenPayload, "iat" | "exp"> = {
+  const payload: TokenPayload = {
     id: user.id,
     email: user.email,
     role: user.role as "student" | "mentor",
@@ -47,14 +49,14 @@ export function generateAccessToken(user: User): string {
 
   return jwt.sign(payload, JWT_SECRET as string, {
     expiresIn: ACCESS_TOKEN_EXPIRY,
-  });
+  } as any);
 }
 
 /**
  * Generate a long-lived refresh token
  */
 export function generateRefreshToken(user: User): string {
-  const payload: Omit<TokenPayload, "iat" | "exp"> = {
+  const payload: TokenPayload = {
     id: user.id,
     email: user.email,
     role: user.role as "student" | "mentor",
@@ -63,7 +65,7 @@ export function generateRefreshToken(user: User): string {
 
   return jwt.sign(payload, JWT_SECRET as string, {
     expiresIn: REFRESH_TOKEN_EXPIRY,
-  });
+  } as any);
 }
 
 /**
@@ -81,7 +83,7 @@ export function generateTokenPair(user: User) {
  */
 export function verifyToken(token: string): TokenPayload | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET as string) as unknown as TokenPayload;
+    const decoded = jwt.verify(token, JWT_SECRET as string) as TokenPayload;
     return decoded;
   } catch (error) {
     return null;
