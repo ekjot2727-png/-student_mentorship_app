@@ -8,14 +8,17 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DesktopNav } from "@/components/navigation/DesktopNav";
 import { MobileNav } from "@/components/navigation/MobileNav";
 import { useAuth } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Send, Loader2 } from "lucide-react";
 import { User, Message } from "@shared/schema";
 import { format } from "date-fns";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function Chat() {
   const [, params] = useRoute("/chat/:userId");
   const [, setLocation] = useLocation();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [ws, setWs] = useState<WebSocket | null>(null);
@@ -26,7 +29,7 @@ export default function Chat() {
     enabled: !!params?.userId,
   });
 
-  const { data: messageHistory } = useQuery<Message[]>({
+  const { data: messageHistory, refetch } = useQuery<Message[]>({
     queryKey: ["/api/messages/", params?.userId || ""],
     enabled: !!params?.userId,
   });
@@ -49,10 +52,30 @@ export default function Chat() {
     };
 
     socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === "message" && data.message) {
-        setMessages((prev) => [...prev, data.message]);
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "message" && data.message) {
+          const msg = data.message;
+          // Only add message if it's relevant to this conversation
+          if ((msg.senderId === params?.userId && msg.receiverId === user?.id) ||
+              (msg.senderId === user?.id && msg.receiverId === params?.userId)) {
+            setMessages((prev) => [...prev, msg]);
+            // Refetch to ensure we have all messages
+            refetch();
+          }
+        }
+      } catch (error) {
+        console.error("WebSocket message error:", error);
       }
+    };
+
+    socket.onerror = (error) => {
+      console.error("WebSocket error:", error);
+      toast({
+        title: "Connection error",
+        description: "Failed to connect to messaging service",
+        variant: "destructive",
+      });
     };
 
     setWs(socket);
@@ -60,7 +83,7 @@ export default function Chat() {
     return () => {
       socket.close();
     };
-  }, [user?.id]);
+  }, [user?.id, params?.userId, refetch, toast]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -69,6 +92,15 @@ export default function Chat() {
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !ws || !params?.userId || !user) return;
+
+    if (ws.readyState !== WebSocket.OPEN) {
+      toast({
+        title: "Connection error",
+        description: "WebSocket connection is not open",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const message = {
       type: "sendMessage",

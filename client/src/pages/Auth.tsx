@@ -36,7 +36,12 @@ export default function Auth() {
         title: "Welcome back!",
         description: "You've successfully logged in.",
       });
-      setLocation("/search");
+      // Route based on user role
+      if (data.user.role === "mentor") {
+        setLocation("/dashboard");
+      } else {
+        setLocation("/search");
+      }
     },
     onError: () => {
       toast({

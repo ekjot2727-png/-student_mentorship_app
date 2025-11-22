@@ -16,11 +16,20 @@ export function DesktopNav() {
   const [location] = useLocation();
   const { user, logout } = useAuth();
 
-  const navItems = [
+  const allNavItems = [
+    { path: "/profile", icon: User, label: "My Profile" },
     { path: "/search", icon: Search, label: "Find Mentors" },
     { path: "/dashboard", icon: Calendar, label: "My Sessions" },
     { path: "/chat", icon: MessageCircle, label: "Messages" },
   ];
+
+  // Hide "Find Mentors" for mentors, only show for students
+  const navItems = allNavItems.filter(item => {
+    if (item.path === "/search" && user?.role === "mentor") {
+      return false;
+    }
+    return true;
+  });
 
   const getInitials = (name: string) => {
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
@@ -78,10 +87,6 @@ export function DesktopNav() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => window.location.href = "/profile"} className="cursor-pointer" data-testid="link-profile">
-                  <User className="h-4 w-4" />
-                  <span>Profile</span>
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout} className="cursor-pointer text-destructive" data-testid="button-logout">
                   <LogOut className="h-4 w-4 mr-2" />

@@ -26,7 +26,7 @@ function ProtectedRoute({ component: Component }: { component: () => JSX.Element
   }
 
   if (!user) {
-    return <Redirect to="/auth" />;
+    return <Redirect to="/" />;
   }
 
   return <Component />;

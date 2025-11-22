@@ -115,23 +115,25 @@ export function verifyRefreshToken(token: string): TokenPayload | null {
 /**
  * Middleware to verify bearer token in Authorization header
  */
-export async function authMiddleware(
+export function authMiddleware(
   req: AuthRequest,
   res: Response,
   next: NextFunction,
-): Promise<void> {
+): void {
   try {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      throw new CustomError("Missing or invalid authorization header", 401);
+      res.status(401).json({ message: "Missing or invalid authorization header" });
+      return;
     }
 
     const token = authHeader.substring(7);
     const decoded = verifyAccessToken(token);
 
     if (!decoded) {
-      throw new CustomError("Invalid or expired access token", 401);
+      res.status(401).json({ message: "Invalid or expired access token" });
+      return;
     }
 
     req.user = {
@@ -142,19 +144,18 @@ export async function authMiddleware(
     req.token = token;
     next();
   } catch (error) {
-    const customError = error instanceof CustomError ? error : new CustomError("Unauthorized", 401);
-    next(customError);
+    res.status(401).json({ message: "Unauthorized" });
   }
 }
 
 /**
  * Optional auth middleware - doesn't fail if token is missing, but sets user if valid
  */
-export async function optionalAuthMiddleware(
+export function optionalAuthMiddleware(
   req: AuthRequest,
   res: Response,
   next: NextFunction,
-): Promise<void> {
+): void {
   const authHeader = req.headers.authorization;
 
   if (authHeader && authHeader.startsWith("Bearer ")) {

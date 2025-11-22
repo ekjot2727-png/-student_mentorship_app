@@ -38,7 +38,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tokens = generateTokenPair(user);
       const { password: _, ...userWithoutPassword } = user;
 
-      res.json({ user: userWithoutPassword, ...tokens });
+      res.json({ user: userWithoutPassword, token: tokens.accessToken, ...tokens });
     } catch (error) {
       res.status(400).json({ error: "Invalid request" });
     }
@@ -56,7 +56,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tokens = generateTokenPair(user);
       const { password: _, ...userWithoutPassword } = user;
 
-      res.json({ user: userWithoutPassword, ...tokens });
+      res.json({ user: userWithoutPassword, token: tokens.accessToken, ...tokens });
     } catch (error) {
       res.status(400).json({ error: "Invalid request" });
     }
@@ -64,9 +64,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/profile/me", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      const profile = await storage.getProfile(req.user!.id);
+      let profile = await storage.getProfile(req.user!.id);
       if (!profile) {
-        return res.status(404).json({ error: "Profile not found" });
+        // Create a default profile if it doesn't exist
+        profile = await storage.createOrUpdateProfile({
+          userId: req.user!.id,
+          bio: null,
+          subjects: null,
+          availability: null,
+        });
       }
       res.json(profile);
     } catch (error) {

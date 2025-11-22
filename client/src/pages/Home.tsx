@@ -1,9 +1,24 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { GraduationCap, Users, Calendar, MessageCircle, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/lib/auth";
 
 export default function Home() {
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (user) {
+      if (user.role === "mentor") {
+        setLocation("/dashboard");
+      } else {
+        setLocation("/search");
+      }
+    }
+  }, [user, setLocation]);
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-background sticky top-0 z-50">
